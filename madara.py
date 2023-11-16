@@ -1,8 +1,11 @@
 import logging
+import os
 import time
 from datetime import datetime
 
 import pytz
+from phpserialize import serialize
+from PIL import Image
 from slugify import slugify
 
 from _db import database
@@ -47,15 +50,52 @@ class Madara:
             )
 
             # return thumb_save_path.replace(CONFIG.IMAGE_SAVE_PATH, CONFIG.CUSTOM_CDN)
-            return f"covers/{image_name}"
+            return f"covers/{image_name}", thumb_save_path
         except Exception:
-            return CONFIG.DEFAULT_THUMB
+            return CONFIG.DEFAULT_THUMB, thumb_save_path
+
+    def get_wp_attachment_metadata(
+        self, saved_thumb_url: str, thumb_save_path: str
+    ) -> str:
+        if not thumb_save_path:
+            return ""
+
+        image = Image.open(thumb_save_path)
+        width, height = image.size
+        size_in_bytes = os.path.getsize(thumb_save_path)
+
+        _wp_attachment_metadata_dict = {
+            "width": width,
+            "height": height,
+            "file": saved_thumb_url,
+            "filesize": size_in_bytes,
+            "image_meta": {
+                "aperture": "0",
+                "credit": "",
+                "camera": "",
+                "caption": "",
+                "created_timestamp": "0",
+                "copyright": "",
+                "focal_length": "0",
+                "iso": "0",
+                "shutter_speed": "0",
+                "title": "",
+                "orientation": "0",
+                "keywords": {},
+            },
+        }
+        _wp_attachment_metadata = serialize(_wp_attachment_metadata_dict).decode(
+            "utf-8"
+        )
+        return _wp_attachment_metadata
 
     def insert_thumb(self, cover_url: str) -> int:
         if not cover_url:
             return 0
 
-        saved_thumb_url = self.download_and_save_thumb(cover_url=cover_url)
+        saved_thumb_url, thumb_save_path = self.download_and_save_thumb(
+            cover_url=cover_url
+        )
 
         thumb_name = saved_thumb_url.split("/")[-1]
 
@@ -88,15 +128,27 @@ class Madara:
 
         thumb_id = database.insert_into(table="posts", data=thumb_post_data)
 
-        database.insert_into(
-            table="postmeta",
-            # data=(
-            #     thumb_id,
-            #     "_wp_attached_file",
-            #     "https://image.truyenon.net/data/image.png",
-            # ),
-            data=(thumb_id, "_wp_attached_file", saved_thumb_url),
-        )
+        postmeta_data = [
+            (thumb_id, "_wp_attached_file", saved_thumb_url),
+            (
+                thumb_id,
+                "_wp_attachment_metadata",
+                self.get_wp_attachment_metadata(
+                    saved_thumb_url=saved_thumb_url, thumb_save_path=thumb_save_path
+                ),
+            ),
+        ]
+
+        self.insert_postmeta(postmeta_data)
+        # database.insert_into(
+        #     table="postmeta",
+        #     data=(thumb_id, "_wp_attached_file", saved_thumb_url),
+        # )
+
+        # database.insert_into(
+        #     table="postmeta",
+        #     data=(thumb_id, "_wp_attached_file", saved_thumb_url),
+        # )
 
         return thumb_id
 
@@ -197,11 +249,11 @@ class Madara:
             (
                 comic_id,
                 "_wp_manga_status",
-                comic_data.get("tinh-trang", "Đang cập nhật"),
+                comic_data.get("tinh-trang", "on-going"),
             ),
             (comic_id, "_wp_manga_alternative", comic_data.get("ten-khac", "")),
             (comic_id, "manga_adult_content", ""),
-            (comic_id, "manga_title_badges", "new"),
+            (comic_id, "manga_title_badges", "no"),
             (comic_id, "_wp_manga_chapter_type", "text"),
         ]
 
