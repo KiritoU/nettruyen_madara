@@ -95,7 +95,5 @@ database = Database()
 if __name__ == "__main__":
     ID = 85
     condition = f'ID = "{ID}"'
-    posts = database.select_all_from(
-        table=f"{CONFIG.TABLE_PREFIX}posts", condition=condition
-    )
+    posts = database.select_all_from(table=f"posts", condition=condition)
     print(posts)
