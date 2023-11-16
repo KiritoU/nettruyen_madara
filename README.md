@@ -15,6 +15,7 @@
 ## Trong session tmux:
 
 **Khi muốn dừng tool**: ấn tổ hợp phím: Ctrl C
+
 **Khi muốn chạy lại tool**: python update.py (hoặc python crawl_all.py)
 
 # Cài đặt cần lưu ý ở file settings.py (trong trường hợp cần sửa lại hoặc chạy tool ở vps khác):
@@ -40,12 +41,17 @@
 # Trong trường hợp restart VPS cần chạy các lệnh sau sau khi ssh vào VPS
 
 > cd nettruyen_madara
+
 > tmux new -s 0
+
 > source /venv/bin/activate
+
 > Bấm và giữ Ctrl sau đó ấn B, sau đó nhả 2 phím và ấn D (dùng để ẩn session tmux - vẫn chạy bình thường)
 
 > tmux new -s 3
+
 > source /venv/bin/activate
+
 > Bấm và giữ Ctrl sau đó ấn B, sau đó nhả 2 phím và ấn D
 
 Sau đó sử dụng theo hướng dẫn trên
