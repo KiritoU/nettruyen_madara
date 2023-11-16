@@ -20,7 +20,12 @@ logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", level=loggin
 
 class Crawler:
     def crawl_chapter(
-        self, comic_id: int, comic_slug: str, chapter_name: str, chapter_href: str
+        self,
+        comic_title: int,
+        comic_id: int,
+        comic_slug: str,
+        chapter_name: str,
+        chapter_href: str,
     ) -> None:
         soup = helper.crawl_soup(chapter_href)
 
@@ -32,6 +37,7 @@ class Crawler:
         #     f.write(json.dumps(chapter_details, indent=4, ensure_ascii=False))
 
         content = _madara.get_download_chapter_content(
+            comic_title=comic_title,
             comic_slug=comic_slug,
             chapter_details=chapter_details,
             chapter_name=chapter_name,
@@ -66,6 +72,7 @@ class Crawler:
 
             chapter_href = chapters.get(chapter_name)
             self.crawl_chapter(
+                comic_title=comic_details.get("title"),
                 comic_id=comic_id,
                 comic_slug=comic_details.get("slug"),
                 chapter_name=chapter_name,

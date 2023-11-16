@@ -2,6 +2,7 @@ import logging
 import time
 from datetime import datetime
 
+import pytz
 from slugify import slugify
 
 from _db import database
@@ -10,6 +11,8 @@ from helper import helper
 from settings import CONFIG
 
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO)
+
+vn_timezone = pytz.timezone("Asia/Ho_Chi_Minh")
 
 
 class Madara:
@@ -27,7 +30,7 @@ class Madara:
 
     def get_timeupdate(self) -> str:
         # TODO: later
-        timeupdate = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        timeupdate = datetime.now(vn_timezone).strftime("%Y/%m/%d %H:%M:%S")
 
         return timeupdate
 
@@ -39,10 +42,11 @@ class Madara:
         try:
             # Download the cover image
             image_name = cover_url.split("/")[-1]
-            thumb_image_name, is_not_saved = helper.save_image(
+            thumb_save_path, is_not_saved = helper.save_image(
                 image_url=cover_url, image_name=image_name, is_thumb=True
             )
 
+            # return thumb_save_path.replace(CONFIG.IMAGE_SAVE_PATH, CONFIG.CUSTOM_CDN)
             return f"covers/{image_name}"
         except Exception:
             return CONFIG.DEFAULT_THUMB
@@ -79,13 +83,18 @@ class Madara:
             "attachment",
             "image/png",
             0,
-            # "",
+            "",
         )
 
         thumb_id = database.insert_into(table="posts", data=thumb_post_data)
 
         database.insert_into(
             table="postmeta",
+            # data=(
+            #     thumb_id,
+            #     "_wp_attached_file",
+            #     "https://image.truyenon.net/data/image.png",
+            # ),
             data=(thumb_id, "_wp_attached_file", saved_thumb_url),
         )
 
@@ -171,7 +180,7 @@ class Madara:
             "wp-manga",
             "",
             0,
-            # "",
+            "",
         )
 
         try:
@@ -193,6 +202,7 @@ class Madara:
             (comic_id, "_wp_manga_alternative", comic_data.get("ten-khac", "")),
             (comic_id, "manga_adult_content", ""),
             (comic_id, "manga_title_badges", "new"),
+            (comic_id, "_wp_manga_chapter_type", "text"),
         ]
 
         self.insert_postmeta(postmeta_data)
@@ -219,9 +229,16 @@ class Madara:
             return be_post[0][0]
 
     def get_download_chapter_content(
-        self, comic_slug: str, chapter_details: dict, chapter_name: str
+        self,
+        comic_title: str,
+        comic_slug: str,
+        chapter_details: dict,
+        chapter_name: str,
     ):
-        result = []
+        result = CONFIG.CHAPTER_PREFIX.format(
+            comic_name=comic_title,
+            chapter=chapter_name.lower().replace("chapter", "").strip(),
+        )
         image_numbers = list(chapter_details.keys())
         # sorted(image_numbers, key=lambda x: int(x))
 
@@ -235,15 +252,52 @@ class Madara:
                 chap_seo=_chapter.get_chapter_slug(chapter_name=chapter_name),
                 image_name=f"{image_number}.jpg",
             )
-            img_rrc = saved_image.replace(f"{CONFIG.IMAGE_SAVE_PATH}", "")
-            result.append(
-                f'"{int(image_number)+1}"'
-                + ':{"src":'
-                + f'"{img_rrc}","mime":"image/jpeg"'
-                + "}"
+            img_src = saved_image.replace(CONFIG.IMAGE_SAVE_PATH, CONFIG.CUSTOM_CDN)
+            result += "\n" + CONFIG.IMAGE_ELEMENT.format(
+                img_src=img_src, img_alt=image_alt
             )
 
-        return "{" + ",".join(result) + "}"
+        return result
+
+    def insert_chapter_content_to_posts(
+        self, chapter_id: int, chapter_slug: str, content: str
+    ):
+        chapter_post_slug = slugify(f"{chapter_id}-{chapter_slug}")
+        timeupdate = self.get_timeupdate()
+        data = (
+            0,
+            timeupdate,
+            timeupdate,
+            content,
+            chapter_post_slug,
+            "",
+            "publish",
+            "open",
+            "closed",
+            "",
+            chapter_post_slug,
+            "",
+            "",
+            timeupdate,
+            timeupdate,
+            "",
+            chapter_id,
+            "",
+            0,
+            "chapter_text_content",
+            "",
+            0,
+            "",
+        )
+
+        try:
+            database.insert_into(table=f"posts", data=data)
+        except Exception as e:
+            helper.error_log(
+                msg=f"Failed to insert comic\n{e}",
+                filename="madara.insert_chapter_content_to_posts.log",
+            )
+            return 0
 
     def insert_chapter(
         self,
@@ -257,7 +311,7 @@ class Madara:
             chapter_name,
             "",
             _chapter.get_chapter_slug(chapter_name=chapter_name),
-            "local",
+            "",
             self.get_timeupdate(),
             self.get_timeupdate(),
             0,
@@ -268,9 +322,14 @@ class Madara:
         )
         chapter_id = database.insert_into(table=f"manga_chapters", data=data)
 
-        database.insert_into(
-            table=f"manga_chapters_data",
-            data=(chapter_id, "local", content),
+        # database.insert_into(
+        #     table=f"manga_chapters_data",
+        #     data=(chapter_id, "local", content),
+        # )
+        self.insert_chapter_content_to_posts(
+            chapter_id=chapter_id,
+            chapter_slug=_chapter.get_chapter_slug(chapter_name=chapter_name),
+            content=content,
         )
 
 
