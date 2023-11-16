@@ -6,6 +6,9 @@ from settings import CONFIG
 
 
 class Database:
+    def __init__(self) -> None:
+        self.conn = self.get_conn()
+
     def get_conn(self):
         try:
             return mysql.connector.connect(
@@ -20,29 +23,29 @@ class Database:
             sys.exit(1)
 
     def select_with(self, query: str) -> list:
-        conn = self.get_conn()
+        conn = self.conn
         cur = conn.cursor()
         cur.execute(query)
         res = cur.fetchall()
         cur.close()
-        conn.close()
+        # conn.close()
 
         return res
 
     def select_all_from(self, table: str, condition: str = "1=1", cols: str = "*"):
-        conn = self.get_conn()
+        conn = self.conn
         cur = conn.cursor()
         cur.execute(
             f"SELECT {cols} FROM {CONFIG.TABLE_PREFIX}{table} WHERE {condition}"
         )
         res = cur.fetchall()
         cur.close()
-        conn.close()
+        # conn.close()
 
         return res
 
     def insert_into(self, table: str, data: tuple = None, is_bulk: bool = False):
-        conn = self.get_conn()
+        conn = self.conn
         cur = conn.cursor()
         id = 0
 
@@ -57,13 +60,13 @@ class Database:
 
         conn.commit()
         cur.close()
-        conn.close()
+        # conn.close()
         return id
 
     def update_table(
         self, table: str, set_cond: str, where_cond: str, data: tuple = ()
     ):
-        conn = self.get_conn()
+        conn = self.conn
         cur = conn.cursor()
         cur.execute(
             f"UPDATE {CONFIG.TABLE_PREFIX}{table} set {set_cond} WHERE {where_cond}",
@@ -71,15 +74,15 @@ class Database:
         )
         conn.commit()
         cur.close()
-        conn.close()
+        # conn.close()
 
     def delete_from(self, table: str = "", condition: str = "1=1"):
-        conn = self.get_conn()
+        conn = self.conn
         cur = conn.cursor()
         cur.execute(f"DELETE FROM {CONFIG.TABLE_PREFIX}{table} WHERE {condition}")
         conn.commit()
         cur.close()
-        conn.close()
+        # conn.close()
 
     def select_or_insert(self, table: str, condition: str, data: tuple):
         res = self.select_all_from(table=table, condition=condition)
