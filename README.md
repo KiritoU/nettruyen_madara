@@ -3,11 +3,13 @@
 ## Chạy file update:
 
 > tmux a -t 0
+
 > python update.py
 
 ## Chạy file crawl all:
 
 > tmux a -t 3
+
 > python crawl_all.py
 
 ## Trong session tmux:
