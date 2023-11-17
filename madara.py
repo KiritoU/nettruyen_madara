@@ -8,7 +8,7 @@ from phpserialize import serialize
 from PIL import Image
 from slugify import slugify
 
-from _db import database
+from _db import Database
 from chapter import _chapter
 from helper import helper
 from settings import CONFIG
@@ -19,8 +19,11 @@ vn_timezone = pytz.timezone("Asia/Ho_Chi_Minh")
 
 
 class Madara:
+    def __init__(self, database: Database) -> None:
+        self.database = database
+
     def get_backend_chapters_slug(self, comic_id: int) -> list:
-        chapters = database.select_all_from(
+        chapters = self.database.select_all_from(
             table=f"manga_chapters",
             condition=f'post_id="{comic_id}"',
         )
@@ -29,7 +32,7 @@ class Madara:
         return chapters_slug
 
     def insert_postmeta(self, postmeta_data: list, table: str = "postmeta"):
-        database.insert_into(table=table, data=postmeta_data, is_bulk=True)
+        self.database.insert_into(table=table, data=postmeta_data, is_bulk=True)
 
     def get_timeupdate(self) -> str:
         # TODO: later
@@ -126,7 +129,7 @@ class Madara:
             "",
         )
 
-        thumb_id = database.insert_into(table="posts", data=thumb_post_data)
+        thumb_id = self.database.insert_into(table="posts", data=thumb_post_data)
 
         postmeta_data = [
             (thumb_id, "_wp_attached_file", saved_thumb_url),
@@ -140,12 +143,12 @@ class Madara:
         ]
 
         self.insert_postmeta(postmeta_data)
-        # database.insert_into(
+        # self.database.insert_into(
         #     table="postmeta",
         #     data=(thumb_id, "_wp_attached_file", saved_thumb_url),
         # )
 
-        # database.insert_into(
+        # self.database.insert_into(
         #     table="postmeta",
         #     data=(thumb_id, "_wp_attached_file", saved_thumb_url),
         # )
@@ -179,14 +182,14 @@ class Madara:
 
             query = f"SELECT {cols} FROM {table} WHERE {condition}"
 
-            be_term = database.select_with(query=query)
+            be_term = self.database.select_with(query=query)
             if not be_term:
-                term_id = database.insert_into(
+                term_id = self.database.insert_into(
                     table="terms",
                     data=(term, term_insert_slug, 0),
                 )
                 term_taxonomy_count = 1 if taxonomy == "seasons" else 0
-                term_taxonomy_id = database.insert_into(
+                term_taxonomy_id = self.database.insert_into(
                     table="term_taxonomy",
                     data=(term_id, taxonomy, "", 0, term_taxonomy_count),
                 )
@@ -197,7 +200,7 @@ class Madara:
                 term_ids = [term_taxonomy_id, False]
 
             try:
-                database.insert_into(
+                self.database.insert_into(
                     table="term_relationships",
                     data=(post_id, term_taxonomy_id, 0),
                 )
@@ -236,7 +239,7 @@ class Madara:
         )
 
         try:
-            comic_id = database.insert_into(table=f"posts", data=data)
+            comic_id = self.database.insert_into(table=f"posts", data=data)
         except Exception as e:
             helper.error_log(
                 msg=f"Failed to insert comic\n{e}", filename="helper.comic_id.log"
@@ -274,7 +277,7 @@ class Madara:
 
     def get_or_insert_comic(self, comic_details: dict) -> int:
         condition = f"""post_name = '{comic_details["slug"]}'"""
-        be_post = database.select_all_from(table=f"posts", condition=condition)
+        be_post = self.database.select_all_from(table=f"posts", condition=condition)
         if not be_post:
             return self.insert_comic(comic_data=comic_details)
         else:
@@ -343,7 +346,7 @@ class Madara:
         )
 
         try:
-            database.insert_into(table=f"posts", data=data)
+            self.database.insert_into(table=f"posts", data=data)
         except Exception as e:
             helper.error_log(
                 msg=f"Failed to insert comic\n{e}",
@@ -372,9 +375,9 @@ class Madara:
             0,
             "",
         )
-        chapter_id = database.insert_into(table=f"manga_chapters", data=data)
+        chapter_id = self.database.insert_into(table=f"manga_chapters", data=data)
 
-        # database.insert_into(
+        # self.database.insert_into(
         #     table=f"manga_chapters_data",
         #     data=(chapter_id, "local", content),
         # )
@@ -383,6 +386,3 @@ class Madara:
             chapter_slug=_chapter.get_chapter_slug(chapter_name=chapter_name),
             content=content,
         )
-
-
-_madara = Madara()

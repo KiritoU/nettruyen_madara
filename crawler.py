@@ -12,13 +12,16 @@ from slugify import slugify
 from chapter import _chapter
 from comic import _comic
 from helper import helper
-from madara import _madara
+from madara import Madara
 from settings import CONFIG
 
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO)
 
 
 class Crawler:
+    def __init__(self, database) -> None:
+        self._madara = Madara(database=database)
+
     def crawl_chapter(
         self,
         comic_title: int,
@@ -36,13 +39,13 @@ class Crawler:
         # with open("json/chapter.json", "w") as f:
         #     f.write(json.dumps(chapter_details, indent=4, ensure_ascii=False))
 
-        content = _madara.get_download_chapter_content(
+        content = self._madara.get_download_chapter_content(
             comic_title=comic_title,
             comic_slug=comic_slug,
             chapter_details=chapter_details,
             chapter_name=chapter_name,
         )
-        _madara.insert_chapter(
+        self._madara.insert_chapter(
             comic_id=comic_id, chapter_name=chapter_name, content=content
         )
         logging.info(f"Inserted {chapter_name}")
@@ -51,7 +54,7 @@ class Crawler:
         soup = helper.crawl_soup(href)
         comic_details = _comic.get_comic_details(href=href, soup=soup)
 
-        comic_id = _madara.get_or_insert_comic(comic_details)
+        comic_id = self._madara.get_or_insert_comic(comic_details)
         logging.info(f"Got (or inserted) comic: {comic_id}")
 
         # with open("json/comic.json", "w") as f:
@@ -63,7 +66,7 @@ class Crawler:
 
         chapters = comic_details.get("chapters", {})
         chapters_name = list(chapters.keys())
-        inserted_chapters_slug = _madara.get_backend_chapters_slug(comic_id)
+        inserted_chapters_slug = self._madara.get_backend_chapters_slug(comic_id)
 
         for chapter_name in chapters_name[::-1]:
             chapter_slug = _chapter.get_chapter_slug(chapter_name=chapter_name)
@@ -126,7 +129,7 @@ class Crawler:
             a = last_li.find("a")
             href = a.get("href")
             pattern = re.compile(r"page=(\d+)")
-            matches = pattern.search(url)
+            matches = pattern.search(href)
             page = matches.group(1)
             return int(page)
         except:

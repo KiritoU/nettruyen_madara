@@ -90,13 +90,3 @@ class Database:
             self.insert_into(table, data)
             res = self.select_all_from(table, condition=condition)
         return res
-
-
-database = Database()
-
-
-if __name__ == "__main__":
-    ID = 85
-    condition = f'ID = "{ID}"'
-    posts = database.select_all_from(table=f"posts", condition=condition)
-    print(posts)
