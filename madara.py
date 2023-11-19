@@ -346,7 +346,11 @@ class Madara:
         )
 
         try:
-            self.database.insert_into(table=f"posts", data=data)
+            condition = f"post_name='{chapter_post_slug}'"
+            self.database.select_or_insert(
+                table="posts", condition=condition, data=data
+            )
+            # self.database.insert_into(table=f"posts", data=data)
         except Exception as e:
             helper.error_log(
                 msg=f"Failed to insert comic\n{e}",
@@ -375,7 +379,13 @@ class Madara:
             0,
             "",
         )
-        chapter_id = self.database.insert_into(table=f"manga_chapters", data=data)
+        condition = f"post_id={comic_id} AND chapter_slug='{_chapter.get_chapter_slug(chapter_name=chapter_name)}'"
+        chapter_id = self.database.select_or_insert(
+            table="manga_chapters",
+            condition=condition,
+            data=data,
+        )
+        # chapter_id = self.database.insert_into(table=f"manga_chapters", data=data)
 
         # self.database.insert_into(
         #     table=f"manga_chapters_data",
