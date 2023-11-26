@@ -307,7 +307,10 @@ class Madara:
                 chap_seo=_chapter.get_chapter_slug(chapter_name=chapter_name),
                 image_name=f"{image_number}.jpg",
             )
-            img_src = saved_image.replace(CONFIG.IMAGE_SAVE_PATH, CONFIG.CUSTOM_CDN)
+            if CONFIG.SAVE_CHAPTER_IMAGES_TO_S3:
+                img_src = f"{CONFIG.S3_BUCKET_IMAGE_URL_PREFIX}/{saved_image}"
+            else:
+                img_src = saved_image.replace(CONFIG.IMAGE_SAVE_PATH, CONFIG.CUSTOM_CDN)
             result += "\n" + CONFIG.IMAGE_ELEMENT.format(
                 img_src=img_src, img_alt=image_alt
             )
@@ -384,7 +387,7 @@ class Madara:
             table="manga_chapters",
             condition=condition,
             data=data,
-        )
+        )[0][0]
         # chapter_id = self.database.insert_into(table=f"manga_chapters", data=data)
 
         # self.database.insert_into(

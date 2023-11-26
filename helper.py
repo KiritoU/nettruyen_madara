@@ -1,9 +1,11 @@
 import logging
+import mimetypes
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
 
+import boto3
 import requests
 from bs4 import BeautifulSoup
 from slugify import slugify
@@ -11,6 +13,13 @@ from slugify import slugify
 from settings import CONFIG
 
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO)
+
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=CONFIG.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=CONFIG.AWS_SECRET_ACCESS_KEY,
+)
 
 
 class Helper:
@@ -49,6 +58,23 @@ class Helper:
         is_thumb: bool = False,
         overwrite: bool = False,
     ) -> str:
+        if not is_thumb and CONFIG.SAVE_CHAPTER_IMAGES_TO_S3:
+            try:
+                file_name = slugify(
+                    f"{comic_seo}-{chap_seo}-{image_name.replace('.jpg', '')}"
+                )
+                imageResponse = requests.get(
+                    image_url, headers=helper.get_header(), stream=True
+                ).raw
+                content_type = imageResponse.headers["content-type"]
+                extension = mimetypes.guess_extension(content_type)
+                s3.upload_fileobj(
+                    imageResponse, CONFIG.S3_BUCKET, file_name + extension
+                )
+                return file_name + extension, False
+            except:
+                return "", True
+
         save_full_path = os.path.join(CONFIG.IMAGE_SAVE_PATH, comic_seo, chap_seo)
 
         Path(save_full_path).mkdir(parents=True, exist_ok=True)
