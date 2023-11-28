@@ -14,11 +14,25 @@
 
 ## Trong session tmux:
 
-**Khi muốn dừng tool**: ấn tổ hợp phím: Ctrl C
+**Khi muốn dừng tool**: ấn tổ hợp phím: Ctrl+B X Y (Bấm và giữ Ctrl sau đó ấn B, sau đó nhả 2 phím và ấn X, sau đó nhả phím và ấn Y)
 
-**Khi muốn chạy lại tool**: python update.py (hoặc python crawl_all.py)
+**Khi muốn chạy lại tool**:
+
+> tmux new -s 0 (hoặc 3 - crawl all)
+
+> cd /root/nettruyen_madara
+
+> source /venv/bin/activate
+
+> python update.py (hoặc python crawl_all.py)
 
 # Cài đặt cần lưu ý ở file settings.py (trong trường hợp cần sửa lại hoặc chạy tool ở vps khác):
+
+- **SAVE_CHAPTER_IMAGES_TO_S3:** True - Lưu ảnh vào amazon S3 (False - Ko lưu ảnh vào amazon S3, lưu ảnh vào Local)
+- **AWS_ACCESS_KEY_ID:** S3 Access Key
+- **AWS_SECRET_ACCESS_KEY:** S3 Secret Access Key
+- **S3_BUCKET:** S3 Bucket để lưu ảnh của chapters
+- **S3_BUCKET_IMAGE_URL_PREFIX:** Link ảnh lấy từ S3 (Không bao gồm tên ảnh lưu trên S3)
 
 - **user, password, host, port, database**: Kết nối tới database
 - **TABLE_PREFIX:** Bắt đầu tên table trong database (Hiện tại là XBFUe\_)
