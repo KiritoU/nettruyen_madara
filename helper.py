@@ -68,6 +68,8 @@ class Helper:
                 ).raw
                 content_type = imageResponse.headers["content-type"]
                 extension = mimetypes.guess_extension(content_type)
+                if not extension:
+                    extension = ".jpg"
                 s3.upload_fileobj(
                     imageResponse, CONFIG.S3_BUCKET, file_name + extension
                 )
