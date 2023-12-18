@@ -66,7 +66,8 @@ class Crawler:
 
         chapters = comic_details.get("chapters", {})
         chapters_name = list(chapters.keys())
-        inserted_chapters_slug = []  # self._madara.get_backend_chapters_slug(comic_id)
+        inserted_chapters_slug = self._madara.get_backend_chapters_slug(comic_id)
+        # inserted_chapters_slug = []  # self._madara.get_backend_chapters_slug(comic_id)
 
         for chapter_name in chapters_name[::-1]:
             chapter_slug = _chapter.get_chapter_slug(chapter_name=chapter_name)
